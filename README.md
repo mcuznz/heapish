@@ -4,8 +4,8 @@ Heapish
 A jQuery Plugin for generating semi-self-sorting heaps of content.
 
 
-What is does
-------------
+What does it do?
+----------------
 
 Heapish creates a "heap" of content, made up of elements in two formats: boxes,
 and rows. It was purpose-built to help manage Dashboard Widgets in an
