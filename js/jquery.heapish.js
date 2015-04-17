@@ -81,9 +81,9 @@
             return;
         }
 
+        $el = $(this);
 		$el.trigger("heapish-initializing");
 
-        $el = $(this);
 		if (!settings) {
 			if (options && $.isPlainObject(options)) {
 				settings = $.extend({}, $.fn.heapish.defaults, options);
@@ -93,16 +93,6 @@
 		}
 
         $el.addClass(settings.uniqueClass || 'heapish');
-
-		/* The ruler is used to accurately measure the inside width of the heap, as
-		 * items like in-element scrollbars will cause $el.width and $el.innerWidth
-		 * to be reported incorrectly (or rather, correctly, but with an unusable
-		 * portion).  It's only needed if you plan to have your
-		 * heap be vertically scrollable - a fixed height, for example.
-		 */
-		if (settings.useRuler) {
-			$ruler = $("<div>").addClass('heapish-ruler').appendTo($el);
-		}
 
         var debounced = debounce(organize, 250);
 		$(window).resize(debounced);
@@ -176,6 +166,16 @@
             });
 
         };
+
+		/* The ruler is used to accurately measure the inside width of the heap, as
+		 * items like in-element scrollbars will cause $el.width and $el.innerWidth
+		 * to be reported incorrectly (or rather, correctly, but with an unusable
+		 * portion).  It's only needed if you plan to have your
+		 * heap be vertically scrollable - a fixed height, for example.
+		 */
+		if (settings.useRuler) {
+			$ruler = $("<div>").addClass('heapish-ruler').appendTo($el);
+		}
 
 		heapOrder = Array.apply(0, Array(heap.length)).map(function(_,i) { return i; });
 		organize();
