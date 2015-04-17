@@ -3,6 +3,8 @@ Heapish
 
 A jQuery Plugin for generating semi-self-sorting heaps of content.
 
+Demo coming soon (if not already available) at http://mcuznz.github.io/heapish/demo.html
+
 
 What does it do?
 ----------------
