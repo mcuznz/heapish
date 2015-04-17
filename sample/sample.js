@@ -17,6 +17,18 @@ $(function() {
         console.log($('#heapContainer').heapish.data());
     });
 
+    $('#states').click(function() {
+        console.log($('#heapContainer').heapish.states());
+    });
+
+    $('#edit').click(function() {
+        $('#heapContainer').heapish.startEditing();
+    });
+
+    $('#stopEdit').click(function() {
+        $('#heapContainer').heapish.finishEditing();
+    });
+
     var removeIt = function() {
         $('#heapContainer').heapish.remove($(this).data('heapish-index'));
     };

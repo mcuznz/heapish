@@ -19,13 +19,16 @@
 }(function ($) {
 
     var heap = [];
-    var ready = false;
-    var settings = {};
-    var $el;
+    var settings;
+    var $el, heapishNode, $ruler;
     var validFormats = ['box', 'row'];
 	var heapOrder = [];
+
+    // States
+	var ready = false;
 	var stopped = false;
 	var showingMeta = false;
+	var editMode = false;
 
 	/* Debounce:
 	 *
@@ -78,17 +81,44 @@
             return;
         }
 
+		$el.trigger("heapish-initializing");
+
         $el = $(this);
-        if (options && $.isPlainObject(options)) {
-			settings = $.extend({}, $.fn.heapish.defaults, options);
-		} else {
-			settings = $.extend({}, $.fn.heapish.defaults);
+		if (!settings) {
+			if (options && $.isPlainObject(options)) {
+				settings = $.extend({}, $.fn.heapish.defaults, options);
+			} else {
+				settings = $.extend({}, $.fn.heapish.defaults);
+			}
 		}
 
         $el.addClass(settings.uniqueClass || 'heapish');
 
+		/* The ruler is used to accurately measure the inside width of the heap, as
+		 * items like in-element scrollbars will cause $el.width and $el.innerWidth
+		 * to be reported incorrectly (or rather, correctly, but with an unusable
+		 * portion).  It's only needed if you plan to have your
+		 * heap be vertically scrollable - a fixed height, for example.
+		 */
+		if (settings.useRuler) {
+			$ruler = $("<div>").addClass('heapish-ruler').appendTo($el);
+		}
+
         var debounced = debounce(organize, 250);
 		$(window).resize(debounced);
+
+		heapishNode = $el.get(0);
+
+		var observer = new MutationObserver(function(mutations) {
+			mutations.forEach(function(mutation){
+				if (mutation.target == heapishNode &&
+					mutation.type == "attributes" &&
+					mutation.attributeName == "style") {
+					debounced();
+				}
+			})
+		});
+		observer.observe(heapishNode, {attributes: true, childList: true, characterData: true});
 
         if (!$el.is(':empty')) {
 
@@ -131,6 +161,9 @@
                     var $item = $("<div></div>").html(item.content);
                     var format = item.format ? cleanFormat(item.format) : settings.defaultFormat;
 
+					// If any additional data was passed along, attach it to the reference
+					if (item.data && $.isPlainObject(item.data)) $item.data(item.data);
+
                     $item.data('heapish-format', format).addClass('heapish-' + format).attr('data-heapish-index', heap.length);
 
                     heap.push({
@@ -147,9 +180,9 @@
 		heapOrder = Array.apply(0, Array(heap.length)).map(function(_,i) { return i; });
 		organize();
 
-		//$el.css('margin-bottom', (0 - settings.paddingH) + "px");
-
         ready = true;
+
+		$el.trigger("heapish-ready");
     };
 
 	/* Defaults
@@ -164,7 +197,9 @@
         defaultFormat: 'box',
         data: [],
 		paddingV: 15,
-		paddingH: 15
+		paddingH: 15,
+		useRuler: false,
+		allowRemovalWhileEditing: true
     };
 
     /* organize
@@ -173,12 +208,20 @@
 	 * sort boxes to best optimize available space, while respecting
 	 * display order as much as possible, and setting margins so
 	 * boxes appear to use space more efficiently than they do.
+	 *
+	 * Pass always=true if you need Organize to fire even while stopped
 	 */
-	var organize = $.fn.heapish.organize = function() {
-		if (stopped) return;
+	var organize = $.fn.heapish.organize = function(always) {
+		if (stopped && (always == undefined || !always)) return;
+
+		$el.trigger("heapish-organizing");
 
 		// determine the physical width of the heap
-		var heapWidth = $el.width();
+		if (settings.useRuler) {
+			var heapWidth = $ruler.width();
+		} else {
+			var heapWidth = $el.innerWidth();
+		}
 
 		var row = {indexes: [], width: 0, isRow: false};
 		var rows = [];
@@ -188,7 +231,9 @@
 		var smallestBoxWidth = heapWidth; // lies!
 
 		// determine the dimensions of every box in the heap before we futz with anything, and build a row array
-		for (var index=0; index<heap.length; index++) {
+		for (var i=0; i < heapOrder.length; i++) {
+			var index = heapOrder[i];
+
 			var top = heap[index].reference.position().top;
 
 			// Our elevation has changed, we're on a new row
@@ -297,6 +342,8 @@
 			var index = newHeapOrder[i];
 			heap[index].reference.detach().appendTo($el).css('margin-bottom', settings.paddingV);
 
+			heap[index].order = i;
+
 			// Add the minimum right margin to all items, save EOLs and Row-formats.
 			if (heap[index].format != 'row' && eolIndexes.indexOf(index) == -1) {
 				heap[index].reference.css('margin-right', settings.paddingH);
@@ -306,7 +353,7 @@
 			}
 		};
 
-		// Finally, redistribute whitespace
+		// Redistribute whitespace
 		for (var index = 0; index < rows.length; index++) {
 			// Get the new "wasted", without padding included
 			var row = rows[index];
@@ -315,7 +362,13 @@
 			if (!row.indexes.length || row.isRow) continue;
 
 			// Recalculate the wasted space - which now excludes padding
-			var wasted = heapWidth;
+			if (settings.useRuler) {
+				// The ruler may have changed size if resorting caused a scrollbar to disappear
+				var wasted = $ruler.width();
+			} else {
+				var wasted = heapWidth;
+			}
+
 			for (var i = 0; i < row.indexes.length; i++) {
 				wasted -= heap[row.indexes[i]].reference.width();
 			}
@@ -335,12 +388,19 @@
 				heap[row.indexes[row.indexes.length - 2]].reference.css('margin-right', gapRemaining);
 
 			}
-
 		};
 
 		// Make our new order known
 		heapOrder = newHeapOrder;
 
+		// Refresh Meta or Edit modes
+		if (showingMeta) showMeta();
+		if (editMode) {
+			console.log("Organize calling startEditing");
+			startEditing();
+		}
+
+		$el.trigger("heapish-organized");
     };
 
     /* quick helper to make sure supplied formats are valid
@@ -349,11 +409,23 @@
         return $.inArray(format, validFormats) ? format : settings.defaultFormat;
     }
 
-    /* push:
+    /* Push
 	 *
-	 * (left off here)
+	 * Adds a new item to the heap.  The content argument can be a string, a
+	 * jQuery object, or a plain object of the following format:
+	 * {content: (string|jQuery object), format: string, data: plain object}
+	 *
+	 * Only content is required - format will fallback to the default setting
+	 * if none is provided.
+	 *
+	 * beforeIndex optionally allows the item to be injected somewhere within
+	 * the heap, rather than appended to it.
+	 *
+	 * Silent optionally prevents syncHeap() and organize() calls.
 	 */
-	$.fn.heapish.push = function(content, format, beforeIndex) {
+	$.fn.heapish.push = function(content, format, beforeIndex, silent) {
+		$el.trigger("heapish-push", content, format, beforeIndex);
+
         // beforeIndex is an optional argument - we'll push to the bottom if not defined
         if (beforeIndex === undefined)  beforeIndex = -1;
 
@@ -377,68 +449,142 @@
             pushable.reference = $("<div>").html(content || "");
         }
 
+		if (content.data && $.isPlainObject(content.data)) pushable.reference.data(content.data);
+
         pushable.reference.addClass('heapish-' + pushable.format).data('heapish-format', pushable.format).attr('data-heapish-index', heap.length);
 
-        if (beforeIndex !== -1) {
-            heap.splice(beforeIndex, 0, pushable);
+		heap.push(pushable);
+        if (beforeIndex === -1) {
+			heapOrder.push(heap.length - 1);
         } else {
-            heap.push(pushable);
+			heapOrder.splice(beforeIndex, 0, heap.length - 1)
         }
 
 		// Needs to exist in the DOM so it can have dimensions
 		$el.append(pushable.reference);
 
-        organize();
-
-		if (showingMeta) showMeta();
+		if (silent == undefined || !silent) {
+			syncHeap();
+			organize(true);
+		}
     };
 
+	/* Pop
+	 *
+	 * Convenience function, removes last item from heap. Same as remove(-1);
+	 */
     $.fn.heapish.pop = function(silent) {
-        remove(heap.length - 1, silent);
+		if (!ready) return;
+
+        remove(-1, silent);
     };
 
-    var remove = $.fn.heapish.remove = function(index, silent) {
+    /* Remove
+	 *
+	 * Removes an item from the heap by index.
+	 * If the silent argument is not explicitly passed, also fires
+	 * syncHeap() and organize(), regardless of stopped state.
+	 *
+	 * If index is negative, removes from the end of the heap (-1 for last,
+	 * -2 for second last, etc)
+	 */
+	var remove = $.fn.heapish.remove = function(index, silent) {
+		if (!ready) return;
+
+		if (index < 0) index == heap.length + index;
+
         if (heap[index]) {
+			$el.trigger("heapish-remove", heap[index]);
+
 			$el.find('[data-heapish-index="' + index + '"]').remove();
             heap.splice(index, 1);
+			heapOrder.splice(heapOrder.indexOf(index), 1);
 
 			$.each(heap, function(index) {
 				heap[index].reference.attr('data-heapish-index', index);
 			});
 
-			if (!silent || silent == undefined) organize();
+			for (var i = 0; i < heapOrder.length; i++) {
+				if (heapOrder[i] > index) {
+					heapOrder[i] = heapOrder[i] - 1;
+				}
+			}
 
-			if (showingMeta) showMeta();
+			if (silent == undefined || !silent) {
+				syncHeap();
+				organize(true);
+			}
         }
     };
 
-    $.fn.heapish.data = function(data) {
-        if (!data) return heap;
+    /* Data
+	 *
+	 * Returns the current heap.
+	 */
+	$.fn.heapish.data = function() {
+		if (!ready) return;
 
-        // do something if parameters are passed?
-    }
+		return heap;
+    };
 
+	/* Stop Heapish
+	 *
+	 * This really just prevents automatic organize() calls from happening.
+	 * If items are pushed or removed while in the stopped state, organize()
+	 * will still fire (unless they're explicitly passed a 'silent' param)
+	 */
 	var stop = $.fn.heapish.stop = function() {
-		if (!stopped) stopped = true;
-	}
+		if (!ready) return;
 
+		if (!stopped) {
+			stopped = true;
+			$el.trigger("heapish-stop");
+		}
+	};
+
+	/* Go
+	 *
+	 * Resume Heapish from a stopped state. Automatically calls Organize.
+	 */
 	var go = $.fn.heapish.go = function(silent) {
+		if (!ready) return;
+
 		if (stopped) {
 			stopped = false;
-			if (silent !== undefined && silent) organize();
+			$el.trigger("heapish-go");
+			if (silent == undefined || !silent) organize();
 		}
-	}
+	};
 
+	/* Hide Meta
+	 *
+	 * Closes the Meta Overlay UI
+	 */
 	var hideMeta = $.fn.heapish.hideMeta = function() {
-		if (!showingMeta) return;
+		if (!ready) return;
+
+		if (!showingMeta || editMode) return;
+		$el.trigger("heapish-meta-hide");
 		$el.find('.heapish-matte').remove();
 		showingMeta = false;
 		go(true);
 	};
 
+	/* Show Meta
+	 *
+	 * Opens an overlay UI that shows heapish data for each item such as
+	 * index, row, format, etc.  Cannot be opened while in Edit Mode.
+	 */
 	var showMeta = $.fn.heapish.showMeta = function(remove) {
+		if (!ready) return;
+
+		// Don't allow meta to be shown while in edit mode
+		if (editMode) return;
+
+		// If showMeta is called while already active, refresh it
 		if (showingMeta) hideMeta();
 
+		$el.trigger("heapish-meta-show");
 		stop();
 
 		$matte = $('<div>').addClass('heapish-matte').appendTo($el);
@@ -462,9 +608,9 @@
 				.html(
 					"<strong>Row:</strong>" + heap[i].row + "<br/>" +
 					"<strong>Index:</strong>" + i + "<br/>" +
+					"<strong>Order:</strong>" + heap[i].order + "<br/>" +
 					"<strong>Class:</strong>" + heap[i].reference.attr('class') + "<br/>" +
 					"<strong>Format:</strong>" + heap[i].format + "<br/>" + 
-					"<strong>Right Margin:</strong>" + heap[i].reference.css('margin-right') + "<br/>" +
 					"<strong>Size:</strong>" + width + "x" + height + "<br/>"
 				).appendTo($meta);
 
@@ -472,6 +618,197 @@
 		}
 	};
 
-	
+	/* Move
+	 *
+	 * index: the index of the item to be moved within the heap
+	 * heapPosition: the new position within the heap
+	 * 	- 0 for beginning of heap, etc
+	 * 	- -1 can be passed to specify end of the heap
+	 * 
+	 */
+	var move = $.fn.heapish.move = function(index, heapPosition) {
+		if (!ready) return;
+
+		var curPos = heapOrder.indexOf(index);
+		if (curPos == -1) return; // How did you do that?
+
+		$el.trigger("heapish-move", heap[index], heapPosition);
+
+		heapOrder.splice(curPos, 1);
+		if (heapPosition == -1) {
+			heapOrder.push(index);
+		} else {
+			heapOrder.splice(heapPosition, 0, index);
+		}
+
+		syncHeap();
+		organize(true);
+	};
+
+	/* Sync Heap
+	 *
+	 * Put the Dom Elements in Heap Order
+	 */
+	var syncHeap = $.fn.heapish.syncHeap = function() {
+		if (!ready) return;
+
+		$el.trigger("heapish-syncing");
+		var newHeap = [];
+		for (var i = 0; i < heapOrder.length; i++) {
+			newHeap.push(heap[heapOrder[i]]);
+			newHeap[i].reference.attr('data-heapish-index', i);
+		}
+		heap = newHeap;
+		heapOrder = Array.apply(0, Array(heap.length)).map(function(_,i) { return i; });
+		$el.trigger("heapish-synced");
+	};
+
+	/* Finish Editing
+	 *
+	 * Edit Mode cleanup function - also triggers heapish-edited event
+	 */
+	var finishEditing = $.fn.heapish.finishEditing = function(silent) {
+		if (!ready) return;
+
+		if (!editMode) return;
+		$el.find('.heapish-matte').remove();
+		editMode = false;
+
+		if (silent == undefined || !silent) $el.trigger("heapish-edited");
+
+		go(true);
+	};
+
+	/* Start Editing
+	 *
+	 * Creates the Editor Overlay, Move & Remove buttons, and all of the action handlers therefore.
+	 *
+	 * Note that it does NOT provide a "Finish Editing" button - you'll want to handle this in your
+	 * own interface, just like the Start Editing button.
+	 */
+	var startEditing = $.fn.heapish.startEditing = function() {
+		if (!ready) return;
+
+		// If meta is being shown, blow it away - edit mode wins
+		if (showingMeta) hideMeta();
+
+		// Called if Refreshing Edit Mode due to a change (push/remove)
+		if (editMode) {
+			// Refreshes Edit Mode (finishes current edit session, then continues setting up again)
+			$el.trigger("heapish-editing-refresh");
+			finishEditing(true);
+		} else {
+			$el.trigger("heapish-editing");
+		}
+
+		stop();
+
+		$matte = $('<div>').addClass('heapish-matte').appendTo($el);
+		editMode = true;
+
+		for (var i = 0; i < heapOrder.length; i++) {
+			var h = heap[heapOrder[i]];
+
+			var offset = h.reference.position();
+			var width = h.reference.width();
+			var height = h.reference.height();
+		
+			var $overlay = $("<div>").addClass("heapish-edit-overlay").css({
+				left: offset.left,
+				top: offset.top,
+				width: width,
+				height: height
+			});
+
+			var $controls = $("<div>").addClass("heapish-edit-controls").appendTo($overlay);
+
+			// If it's a Row, it needs up/down buttons
+			if (h.format == "row") {
+				// NOTE: Consider hiding Up button when Row = 0, Down when Row = rows.length - 1
+				// May be able to do that entirely with CSS, however
+
+				var $up = $("<div>").addClass("control up").click(
+					function() {
+						var index = heapOrder[$(this).data('index')];
+
+						var currentRow = heap[index].row;
+						if (currentRow == 0) return;
+						var targetRow = currentRow - 1;
+
+						// Find the first element in the heap matching Target Row
+						for (var j = 0; j < heapOrder.length; j++) {
+							if (heap[heapOrder[j]].row == targetRow) {
+								move(index, j);
+								break;
+							}
+						}
+					}
+				).appendTo($controls).data('index', i);
+
+				var $down = $("<div>").addClass("control down").click(
+					function() {
+						var index = heapOrder[$(this).data('index')];
+
+						var currentRow = heap[index].row;
+						if (currentRow == heap[heapOrder[heapOrder.length - 1]].row) return;
+						var targetRow = currentRow + 1;
+
+						// Find the LAST element in the heap matching Target Row
+						for (var j = heapOrder.length - 1; j > 0; j--) {
+							if (heap[heapOrder[j]].row == targetRow) {
+								move(index, j);
+								break;
+							}
+						}
+					}
+				).appendTo($controls).data('index', i);
+
+			// Otherwise, it needs Left/Right buttons
+			} else {
+
+				var $left = $("<div>").addClass("control left").click(
+					function() {
+						var index = $(this).data('index');
+
+						if (index == 0) return;
+						move(index, index - 1);
+					}
+				).appendTo($controls).data('index', i);
+
+				var $right = $("<div>").addClass("control right").click(
+					function() {
+						var index = $(this).data('index');
+						
+						if (index == heapOrder.length - 1) return;
+						move(index, index + 1);
+					}
+				).appendTo($controls).data('index', i);
+
+			}
+
+			// In any case, we need a Remove button - if allowed
+			if (settings.allowRemovalWhileEditing) {
+				var $remove = $("<div>").addClass("control remove").click(
+					function() {
+						var index = heapOrder[$(this).data('index')];
+						
+					}
+				).appendTo($controls).data('index', $(this).data('index'));
+			}
+
+			$overlay.appendTo($matte);
+		}
+
+	};
+
+	// Small helper function to return various heapish states
+	$.fn.heapish.states = function() {
+		return {
+			'ready': ready,
+			'stopped': stopped,
+			'meta': showingMeta,
+			'edit': editMode
+		}
+	};
 
 }));

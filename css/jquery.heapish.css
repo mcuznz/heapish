@@ -46,7 +46,7 @@
     /*background: rgba(255,128,128,0.3);*/
 }
 
-.heapish-meta {
+.heapish-meta, .heapish-edit-overlay {
     position: absolute;
     top: 0;
     left: 0;
@@ -61,4 +61,94 @@
     font-size: 80%;
     padding: 5px;
     text-shadow: 0px 0px 2px rgb(255,255,255), 0px 0px 1px rgb(255,255,255); 
+}
+
+.heapish-ruler {
+    width: 100% !important;
+    height: 0px !important;
+    visibility: none !important;
+    border-width: 0px !important;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.heapish-edit-controls {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.heapish-edit-controls .control {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    background: #0C8925;
+    cursor: pointer;
+    text-align: center;
+    color: white;
+    line-height: 26px;
+}
+
+.heapish-edit-controls .control:hover {
+    background: #20C141;
+}
+
+.heapish-edit-controls .control.remove {
+    right: 0;
+    left: auto;
+    bottom: 0;
+    top: auto;
+    background: #870E0C;
+    border-top-left-radius: 10px;
+    line-height: 30px;
+}
+
+.heapish-edit-controls .control.remove:hover {
+    background: #E03838;
+}
+
+.heapish-edit-controls .control.up,
+.heapish-edit-controls .control.left {
+    border-bottom-right-radius: 10px;
+}
+
+.heapish-edit-controls .control.down {
+    bottom: 0;
+    top: auto;
+    border-top-right-radius: 10px;
+}
+
+.heapish-edit-controls .control.right {
+    right: 0;
+    left: auto;
+    border-bottom-left-radius: 10px;
+}
+
+.heapish-edit-controls .up:after {
+    content: "\25b2";
+}
+
+.heapish-edit-controls .down:after {
+    content: "\25bc";
+}
+
+.heapish-edit-controls .left:after {
+    content: "\25c0";
+}
+
+.heapish-edit-controls .right:after {
+    content: "\25b6";
+}
+
+.heapish-edit-controls .remove:after {
+    content: "\274c";
+}
+
+.heapish-matte .heapish-edit-overlay:first-child .up,
+.heapish-matte .heapish-edit-overlay:first-child .left,
+.heapish-matte .heapish-edit-overlay:last-child .down,
+.heapish-matte .heapish-edit-overlay:last-child .right {
+    display: none;
 }
