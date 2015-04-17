@@ -41,12 +41,16 @@
       }
       .toolbar {
         width: 100%;
-        height: 40px;
+        height: 50px;
         line-height: 40px;
         background: #555;
         color: #fff;
       }
-      #heapDemo {
+      .toolbar button {
+        color: #333;
+        font-size: 80%;
+      }
+      #heapDemoWrapper {
         border: 3px solid #888;
         background-image: repeating-linear-gradient(-45deg, transparent, transparent 15px, #eee 15px, #eee 30px);
       }
@@ -91,7 +95,9 @@
   <button id="logStates">Log States</button>
 </div>
 
-<div id="heapDemo">
+<div id="heapDemoWrapper">
+  <div id="heapDemo">
+  </div>
 </div>
 
         </section>
@@ -122,11 +128,11 @@
         });
 
         $('#addBox2').click(function() {
-          $('#heapDemo').heapish.push('<div class="box2">Box 2</div>');
+          $('#heapDemo').heapish.push('<div class="box2">Box 2</div>', 'box');
         });
 
         $('#addRow').click(function() {
-          $('#heapDemo').heapish.push('<div class="row">Row</div>');
+          $('#heapDemo').heapish.push('<div class="row">Row</div>', 'row');
         });
 
         $('#toggleMeta').click(function() {
