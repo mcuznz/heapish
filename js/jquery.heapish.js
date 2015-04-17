@@ -69,8 +69,6 @@
 		if (stopped) {
 			if (ready && options && options == 'go') {
 				$(this).heapish.go();
-			} else {
-				$(this).heapish.stop();
 			}
 			return;
 		}
@@ -575,7 +573,7 @@
 	 * Opens an overlay UI that shows heapish data for each item such as
 	 * index, row, format, etc.  Cannot be opened while in Edit Mode.
 	 */
-	var showMeta = $.fn.heapish.showMeta = function(remove) {
+	var showMeta = $.fn.heapish.showMeta = function() {
 		if (!ready) return;
 
 		// Don't allow meta to be shown while in edit mode
@@ -667,16 +665,16 @@
 	 *
 	 * Edit Mode cleanup function - also triggers heapish-edited event
 	 */
-	var finishEditing = $.fn.heapish.finishEditing = function(silent) {
+	var finishEditing = $.fn.heapish.finishEditing = function() {
 		if (!ready) return;
 
 		if (!editMode) return;
 		$el.find('.heapish-matte').remove();
 		editMode = false;
 
-		if (silent == undefined || !silent) $el.trigger("heapish-edited");
-
 		go(true);
+
+		$el.trigger("heapish-edited", heap);
 	};
 
 	/* Start Editing
