@@ -69,7 +69,8 @@ in the array should have the following form:
 __paddingV__: The amount of vertical space between rows in the heap.
 
 __paddingH__: The _minimum_ amount of horizontal space between boxes in the
-heap.
+heap.  Actual space is computed at runtime to evenly distribute content, but
+will never drop below this level.
 
 __useRuler__: if `true`, a hidden ruler object is added to the heap and used to
 calculate width. If you expect your heap to have a vertical scrollbar (container
@@ -79,13 +80,16 @@ cases, it's not needed.
 __allowRemovalWhileEditing__: by default, when entering Edit Mode each item in
 the heap is displayed with arrows to control its position, and a red X button
 to allow the item to be removed.  This prevents that removal button from being
-rendered.
+rendered.  IT does __not__ prevent the .remove() method from being called.
+
+
+___
 
 
 Functions
 ---------
 
-__.heapish(options)__
+### __.heapish(options)__
 
 __Usage:__ `$('#heap').heapish({useRuler: true});`
 
@@ -97,7 +101,7 @@ any other heapish function can be called by passing its name as the options
 argument, ie: `.heapish("stop");`
 
 
-__.heapish.organize(always)__
+### __.heapish.organize(always)__
 
 __Usage:__ `$('#heap').heapish.organize();`
 
@@ -108,7 +112,7 @@ If `true`, _always_ forces `organize()` to fire even if heapish is in a stopped
 state.
 
 
-__.heapish.push(content, format, beforeIndex, silent)__
+### __.heapish.push(content, format, beforeIndex, silent)__
 
 __Usage:__ `$('#heap').heapish.push("<div>New Heap Item</div>", "box");`
 
@@ -130,7 +134,7 @@ fired. This can be useful if you intend to add multiple items, as it will
 greatly reduce the number of DOM-modifying events being triggered.
 
 
-__.heapish.remove(index, silent)__
+### __.heapish.remove(index, silent)__
 
 __Usage:__ `$('#heap').heapish.remove(5);`
 
@@ -145,7 +149,7 @@ fired. This can be useful if you intend to remove multiple items, as it will
 greatly reduce the number of DOM-modifying events being triggered.
 
 
-__.heapish.pop(silent)__
+### __.heapish.pop(silent)__
 
 __Usage:__ `$('#heap').heapish.pop();`
 
@@ -157,7 +161,7 @@ fired. This can be useful if you intend to remove multiple items, as it will
 greatly reduce the number of DOM-modifying events being triggered.
 
 
-__.heapish.data()__
+### __.heapish.data()__
 
 __Usage:__ `$('#heap').heapish.data();`
 
@@ -166,21 +170,21 @@ persist the order of elements to a database or something similar, you'll want
 to call this function and iterate the response.
 
 
-__.heapish.stop()__
+### __.heapish.stop()__
 
 __Usage:__ `$.('#heap').heapish.stop();`
 
 While _stopped_, heapish will not fire automatic `organize()` events.
 
 
-__.heapish.go()__
+### __.heapish.go()__
 
 __Usage:__ `$.('#heap').heapish.go();`
 
 Clears the _stopped_ state, resuming normal automatic `organize()` events.
 
 
-__.heapish.showMeta()__
+### __.heapish.showMeta()__
 
 __Usage:__ `$.('#heap').heapish.showMeta();`
 
@@ -191,7 +195,7 @@ If called while already in this mode, it ends the previous showMeta session and
 begins a new one.
 
 
-__.heapish.hideMeta()__
+### __.heapish.hideMeta()__
 
 __Usage:__ `$.('#heap').heapish.hideMeta();`
 
@@ -199,7 +203,7 @@ Ends the running showMeta session, if one is present. The meta overlay can also
 be dismissed by simply clicking on it.
 
 
-__.heapish.move(index, heapPosition)__
+### __.heapish.move(index, heapPosition)__
 
 __Usage:__ `$.('#heap').heapish.move(5, 2);`
 
@@ -214,7 +218,7 @@ __NOTE__ that `.move()` has no silent option - `syncHeap()` and `organize()`
 are always called as a result of using `.move()`.
 
 
-__.heapish.syncHeap()__
+### __.heapish.syncHeap()__
 
 __Usage:__ `$.('#heap').heapish.syncHeap();`
 
@@ -222,7 +226,7 @@ Synchronizes the DOM order with the understood Heap order.  If you ever have to
 manually called `.organize()` consider calling this first as well.
 
 
-__.heapish.startEditing()__
+### __.heapish.startEditing()__
 
 __Usage:__ `$.('#heap').heapish.startEditing();`
 
@@ -232,14 +236,14 @@ controls, while __Row__ format items are given Up/Down controls.  Assuming
 control.
 
 
-__.heapish.finishEditing()__
+### __.heapish.finishEditing()__
 
 __Usage:__ `$.('#heap').heapish.finishEditing();`
 
 Closes the Editing overlay and leaves Edit Mode.
 
 
-__.heapish.states()__
+### __.heapish.states()__
 
 __Usage:__ `$.('#heap').heapish.states();`
 
@@ -247,6 +251,8 @@ Returns an object containing information about the various states of the heap;
 _ready_, _stopped_, _meta_ and _edit_ (the last two indicating that showMeta or
 startEditing have been called, respectively).
 
+
+___
 
 
 Events
