@@ -295,6 +295,9 @@ __heapish-edited:__ Triggered when heapish.finishEditing() is called. Supplies
 the heap as an argument.
 
 
+___
+
+
 FAQ
 ---
 
