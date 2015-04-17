@@ -21,7 +21,13 @@ Imagine a Container that's 800px wide, containing 4 elements:
 - Row 3 contains another box, also 200px by 200px.
 
 Handed over to Heapish, the box in the third row would be moved to the end of
-the first row, and the third row would be removed.
+the first row, and the third row would be removed. That may not sound very
+impressive on its own, but when you start handing it dozens of boxes, it's
+pretty powerful.
+
+Heapish also evenly spaces those boxes across the Row, and responds to both
+window.resize events and DOM Mutation events on its parent element, allowing it
+to dynamically reposition content responsively.
 
 
 Settings
