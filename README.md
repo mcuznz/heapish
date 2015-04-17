@@ -30,6 +30,9 @@ window.resize events and DOM Mutation events on its parent element, allowing it
 to dynamically reposition content responsively.
 
 
+___
+
+
 Settings
 --------
 
@@ -255,8 +258,8 @@ startEditing have been called, respectively).
 ___
 
 
-Events
-------
+Triggered Events
+----------------
 
 __heapish-initializing:__ Triggered when heapish() is first called.
 
