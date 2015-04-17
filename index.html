@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Heapish by mcuznz</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Heapish</h1>
+        <h2>Semi-Self-Sorting Heaps of Content</h2>
+        <a href="https://github.com/mcuznz/heapish" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a id="heapish" class="anchor" href="#heapish" aria-hidden="true"><span class="octicon octicon-link"></span></a>Heapish</h1>
+
+<p>A jQuery Plugin for generating semi-self-sorting heaps of content.</p>
+
+<h2>
+<a id="what-does-it-do" class="anchor" href="#what-does-it-do" aria-hidden="true"><span class="octicon octicon-link"></span></a>What does it do?</h2>
+
+<p>Heapish creates a "heap" of content, made up of elements in two formats: boxes,
+and rows. It was purpose-built to help manage Dashboard Widgets in an
+application, which contain both full-width items such as graphs and tables
+(Rows), and smaller items such as pie charts or small bits of data (Boxes).</p>
+
+<p>Heapish attempts to organize the Boxes into as few rows as possible, while
+respecting the implied order of the content as much as possible.</p>
+
+<p>Imagine a Container that's 800px wide, containing 4 elements:</p>
+
+<ul>
+<li>Row 1 contains two boxes, each 200px by 200px.</li>
+<li>Row 2 contains a full-width table</li>
+<li>Row 3 contains another box, also 200px by 200px.</li>
+</ul>
+
+<p>Handed over to Heapish, the box in the third row would be moved to the end of
+the first row, and the third row would be removed. That may not sound very
+impressive on its own, but when you start handing it dozens of boxes, it's
+pretty powerful.</p>
+
+<p>Heapish also evenly spaces those boxes across the Row, and responds to both
+window.resize events and DOM Mutation events on its parent element, allowing it
+to dynamically reposition content responsively.</p>
+
+<hr>
+
+<h2>
+<a id="settings" class="anchor" href="#settings" aria-hidden="true"><span class="octicon octicon-link"></span></a>Settings</h2>
+
+<p>The default Settings object is as follows:</p>
+
+<div class="highlight highlight-javascript"><pre>    $.fn.heapish.defaults <span class="pl-k">=</span> {
+        uniqueClass<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>heapish<span class="pl-pds">'</span></span>,
+        defaultFormat<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>box<span class="pl-pds">'</span></span>,
+        data<span class="pl-k">:</span> [],
+        paddingV<span class="pl-k">:</span> <span class="pl-c1">15</span>,
+        paddingH<span class="pl-k">:</span> <span class="pl-c1">15</span>,
+        useRuler<span class="pl-k">:</span> <span class="pl-c1">false</span>,
+        allowRemovalWhileEditing<span class="pl-k">:</span> <span class="pl-c1">true</span>
+    };</pre></div>
+
+<p>This defaults object can be overwritten before calling heapish, if desired, or
+specific options can be provided when <code>heapish()</code> is first called.</p>
+
+<p><strong>uniqueClass</strong>: the Class added to the element <code>heapish()</code> is called against.</p>
+
+<p><strong>defaultFormat</strong>: the format new content should be given when none is
+specified. Should be either 'box' or 'row'.</p>
+
+<p><strong>data</strong>: an array of content to be added automatically to the heap. Each object
+in the array should have the following form:</p>
+
+<div class="highlight highlight-javascript"><pre>{
+    content<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">"</span>&lt;p&gt;Some HTML here&lt;/p&gt;<span class="pl-pds">"</span></span>, <span class="pl-c">// OR</span>
+    content<span class="pl-k">:</span> $(<span class="pl-s"><span class="pl-pds">"</span>#some_jquery_object<span class="pl-pds">"</span></span>),
+    format<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>box<span class="pl-pds">'</span></span>, <span class="pl-c">// optional, defaults to _defaultFormat_</span>
+    data<span class="pl-k">:</span> {foo<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>bar<span class="pl-pds">'</span></span>} <span class="pl-c">// optional, added to the resulting DOM object as data attributes</span>
+}</pre></div>
+
+<p><strong>paddingV</strong>: The amount of vertical space between rows in the heap.</p>
+
+<p><strong>paddingH</strong>: The <em>minimum</em> amount of horizontal space between boxes in the
+heap.  Actual space is computed at runtime to evenly distribute content, but
+will never drop below this level.</p>
+
+<p><strong>useRuler</strong>: if <code>true</code>, a hidden ruler object is added to the heap and used to
+calculate width. If you expect your heap to have a vertical scrollbar (container
+of a fixed size with overflow: scroll, for example) set this to true. In most
+cases, it's not needed.</p>
+
+<p><strong>allowRemovalWhileEditing</strong>: by default, when entering Edit Mode each item in
+the heap is displayed with arrows to control its position, and a red X button
+to allow the item to be removed.  This prevents that removal button from being
+rendered.  IT does <strong>not</strong> prevent the .remove() method from being called.</p>
+
+<hr>
+
+<h2>
+<a id="functions" class="anchor" href="#functions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Functions</h2>
+
+<h3>
+<a id="heapishoptions" class="anchor" href="#heapishoptions" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish(options)</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$('#heap').heapish({useRuler: true});</code></p>
+
+<p>This initializes Heapish. If the target element already contains content, each
+element is added to the Heap. </p>
+
+<p><em>options</em> takes the form of the settings object described above. Alternatively,
+any other heapish function can be called by passing its name as the options
+argument, ie: <code>.heapish("stop");</code></p>
+
+<h3>
+<a id="heapishorganizealways" class="anchor" href="#heapishorganizealways" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.organize(always)</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$('#heap').heapish.organize();</code></p>
+
+<p>This manually invokes the organize function. If you've changed the contents of
+an item in the heap, you may want to call this.</p>
+
+<p>If <code>true</code>, <em>always</em> forces <code>organize()</code> to fire even if heapish is in a stopped
+state.</p>
+
+<h3>
+<a id="heapishpushcontent-format-beforeindex-silent" class="anchor" href="#heapishpushcontent-format-beforeindex-silent" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.push(content, format, beforeIndex, silent)</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$('#heap').heapish.push("&lt;div&gt;New Heap Item&lt;/div&gt;", "box");</code></p>
+
+<p>This adds a new item to the Heap.</p>
+
+<p><em>content</em> may be an HTML string or jQuery object. It may also be an object of
+the same format accepted by <code>settings.data</code></p>
+
+<p><em>format</em>, if provided, should be either 'box' or 'row', defaulting to
+<code>settings.defaultFormat</code> if neither is supplied. If both <em>content.format</em> and
+<em>format</em> are supplied, <em>format</em> will be used.</p>
+
+<p><em>beforeIndex</em>, if provided, will insert the new item into the heap at the given
+index. If omitted or set to -1, the item will be appended to the end of the
+heap.</p>
+
+<p><em>silent</em>, if provided, will prevent <code>syncHeap()</code> and <code>organize()</code> from being
+fired. This can be useful if you intend to add multiple items, as it will
+greatly reduce the number of DOM-modifying events being triggered.</p>
+
+<h3>
+<a id="heapishremoveindex-silent" class="anchor" href="#heapishremoveindex-silent" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.remove(index, silent)</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$('#heap').heapish.remove(5);</code></p>
+
+<p>This removes an item from the Heap.</p>
+
+<p><em>index</em> is the numerical index in the heap of the item to be removed.  If
+<em>index</em> is provided as a negative number, the item is removed from the end
+of the heap (-1 for the last item, -2 for second last, etc)</p>
+
+<p><em>silent</em>, if provided, will prevent <code>syncHeap()</code> and <code>organize()</code> from being
+fired. This can be useful if you intend to remove multiple items, as it will
+greatly reduce the number of DOM-modifying events being triggered.</p>
+
+<h3>
+<a id="heapishpopsilent" class="anchor" href="#heapishpopsilent" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.pop(silent)</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$('#heap').heapish.pop();</code></p>
+
+<p>The removes the last item from the Heap. It's simply a shorthand for
+<code>heapish.remove(-1)</code>.</p>
+
+<p><em>silent</em>, if provided, will prevent <code>syncHeap()</code> and <code>organize()</code> from being
+fired. This can be useful if you intend to remove multiple items, as it will
+greatly reduce the number of DOM-modifying events being triggered.</p>
+
+<h3>
+<a id="heapishdata" class="anchor" href="#heapishdata" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.data()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$('#heap').heapish.data();</code></p>
+
+<p>Returns the array of data representing the current Heap.  If you're planning to
+persist the order of elements to a database or something similar, you'll want
+to call this function and iterate the response.</p>
+
+<h3>
+<a id="heapishstop" class="anchor" href="#heapishstop" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.stop()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.stop();</code></p>
+
+<p>While <em>stopped</em>, heapish will not fire automatic <code>organize()</code> events.</p>
+
+<h3>
+<a id="heapishgo" class="anchor" href="#heapishgo" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.go()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.go();</code></p>
+
+<p>Clears the <em>stopped</em> state, resuming normal automatic <code>organize()</code> events.</p>
+
+<h3>
+<a id="heapishshowmeta" class="anchor" href="#heapishshowmeta" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.showMeta()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.showMeta();</code></p>
+
+<p>Creates a Meta-data overlay which displays information about heap items such as
+the computed row and index, dimensions, etc.  Meant as a Developer Debug tool.</p>
+
+<p>If called while already in this mode, it ends the previous showMeta session and
+begins a new one.</p>
+
+<h3>
+<a id="heapishhidemeta" class="anchor" href="#heapishhidemeta" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.hideMeta()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.hideMeta();</code></p>
+
+<p>Ends the running showMeta session, if one is present. The meta overlay can also
+be dismissed by simply clicking on it.</p>
+
+<h3>
+<a id="heapishmoveindex-heapposition" class="anchor" href="#heapishmoveindex-heapposition" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.move(index, heapPosition)</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.move(5, 2);</code></p>
+
+<p>Relocates an item within the Heap.</p>
+
+<p><em>index</em> is the numerical index in the heap of the item to be moved.</p>
+
+<p><em>heapPosition</em> is the new position desired within the heap.  If given as -1,
+the item is moved to the back of the heap.</p>
+
+<p><strong>NOTE</strong> that <code>.move()</code> has no silent option - <code>syncHeap()</code> and <code>organize()</code>
+are always called as a result of using <code>.move()</code>.</p>
+
+<h3>
+<a id="heapishsyncheap" class="anchor" href="#heapishsyncheap" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.syncHeap()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.syncHeap();</code></p>
+
+<p>Synchronizes the DOM order with the understood Heap order.  If you ever have to
+manually called <code>.organize()</code> consider calling this first as well.</p>
+
+<h3>
+<a id="heapishstartediting" class="anchor" href="#heapishstartediting" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.startEditing()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.startEditing();</code></p>
+
+<p>Enters the Heapish Edit mode. <strong>Box</strong> format items are given Left/Right
+controls, while <strong>Row</strong> format items are given Up/Down controls.  Assuming
+<code>settings.allowRemovalWhileEditing</code> is true, all items also receive a Remove
+control.</p>
+
+<h3>
+<a id="heapishfinishediting" class="anchor" href="#heapishfinishediting" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.finishEditing()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.finishEditing();</code></p>
+
+<p>Closes the Editing overlay and leaves Edit Mode.</p>
+
+<h3>
+<a id="heapishstates" class="anchor" href="#heapishstates" aria-hidden="true"><span class="octicon octicon-link"></span></a><strong>.heapish.states()</strong>
+</h3>
+
+<p><strong>Usage:</strong> <code>$.('#heap').heapish.states();</code></p>
+
+<p>Returns an object containing information about the various states of the heap;
+<em>ready</em>, <em>stopped</em>, <em>meta</em> and <em>edit</em> (the last two indicating that showMeta or
+startEditing have been called, respectively).</p>
+
+<hr>
+
+<h2>
+<a id="triggered-events" class="anchor" href="#triggered-events" aria-hidden="true"><span class="octicon octicon-link"></span></a>Triggered Events</h2>
+
+<p><strong>heapish-initializing:</strong> Triggered when heapish() is first called.</p>
+
+<p><strong>heapish-ready:</strong> Triggered when heapish() completes setup.</p>
+
+<p><strong>heapish-organizing:</strong> Triggered when heapish.organize() begins.</p>
+
+<p><strong>heapish-organized:</strong> Triggered when heapish.organized() completes.</p>
+
+<p><strong>heapish-push:</strong> Triggered when heapish.push() begins. Supplies the content,
+format, and beforeIndex parameters given to <code>push()</code> as arguments.</p>
+
+<p><strong>heapish-remove:</strong> Triggered when heapish.remove() begins. Supplies the heap item
+being removed as an argument.</p>
+
+<p><strong>heapish-stop:</strong> Triggered when heapish.stop() is called.</p>
+
+<p><strong>heapish-go:</strong> Triggered when heapish.go() is called.</p>
+
+<p><strong>heapish-meta-show:</strong> Triggered when heapish.showMeta() is called.</p>
+
+<p><strong>heapish-meta-hide:</strong> Triggered when heapish.hideMeta() is called.</p>
+
+<p><strong>heapish-move:</strong> Triggered when heapish.move() is called. Supplies heap item
+being moved, and the new heap position it is being moved to as arguments.</p>
+
+<p><strong>heapish-editing:</strong> Triggered when heapish.startEditing() is called.</p>
+
+<p><strong>heapish-editing-refresh:</strong> Triggered when heapish.startEditing() is called
+while already in Edit Mode.</p>
+
+<p><strong>heapish-edited:</strong> Triggered when heapish.finishEditing() is called. Supplies
+the heap as an argument.</p>
+
+<hr>
+
+<h2>
+<a id="faq" class="anchor" href="#faq" aria-hidden="true"><span class="octicon octicon-link"></span></a>FAQ</h2>
+
+<p>No one has asked any questions yet!</p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/mcuznz/heapish/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/mcuznz/heapish/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/mcuznz/heapish"></a> is maintained by <a href="https://github.com/mcuznz">mcuznz</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
